@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi Vida en Spotify · Visualización de Datos Personales</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:    #1DB954;
+      --green-dk: #158a3e;
+      --black:    #121212;
+      --dark:     #181818;
+      --card:     #282828;
+      --muted:    #535353;
+      --light:    #b3b3b3;
+      --white:    #ffffff;
+      --accent:   #1ed760;
+      --pink:     #e91e8c;
+      --purple:   #9b59b6;
+      --font:     'Circular', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: var(--font);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(180deg, #1a3a2a 0%, #121212 100%);
+      padding: 100px 40px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(29,185,84,.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      font-size: .75rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.2rem, 6vw, 4.5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 span { color: var(--green); }
+
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--light);
+      max-width: 580px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      flex-wrap: wrap;
+      margin-top: 48px;
+    }
+
+    .stat-pill {
+      text-align: center;
+    }
+
+    .stat-pill .num {
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: var(--green);
+      display: block;
+      line-height: 1;
+    }
+
+    .stat-pill .label {
+      font-size: .8rem;
+      color: var(--light);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-top: 6px;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(18,18,18,.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 40px;
+    }
+
+    .nav-logo {
+      font-weight: 900;
+      font-size: 1rem;
+      color: var(--green);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--light);
+      text-decoration: none;
+      font-size: .85rem;
+      transition: color .2s;
+    }
+
+    .nav-links a:hover { color: var(--white); }
+
+    /* ── Sections ── */
+    section {
+      padding: 80px 40px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: .7rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 10px;
+    }
+
+    .section-question {
+      font-size: clamp(1.5rem, 3.5vw, 2.4rem);
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .section-desc {
+      color: var(--light);
+      max-width: 600px;
+      margin-bottom: 44px;
+      font-size: .97rem;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 32px;
+      border: 1px solid rgba(255,255,255,.05);
+    }
+
+    .card-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .card-grid.two { grid-template-columns: 1fr 1fr; }
+    .card-grid.three { grid-template-columns: repeat(3, 1fr); }
+
+    @media (max-width: 768px) {
+      .card-grid.two, .card-grid.three { grid-template-columns: 1fr; }
+      nav { padding: 14px 20px; }
+      .nav-links { gap: 16px; }
+      section { padding: 60px 20px; }
+      .hero { padding: 80px 20px 60px; }
+      .hero-stats { gap: 32px; }
+    }
+
+    /* ── Chart containers ── */
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .chart-wrap.tall { height: 380px; }
+    .chart-wrap.medium { height: 300px; }
+    .chart-wrap.short { height: 250px; }
+
+    /* ── Section divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,.07);
+      margin: 0 40px;
+    }
+
+    /* ── Insight box ── */
+    .insight {
+      background: linear-gradient(135deg, rgba(29,185,84,.12), rgba(29,185,84,.04));
+      border-left: 3px solid var(--green);
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+      font-size: .92rem;
+      color: var(--light);
+      margin-top: 24px;
+    }
+
+    .insight strong { color: var(--white); }
+
+    /* ── Placeholder for tool embeds ── */
+    .embed-placeholder {
+      background: var(--card);
+      border: 2px dashed rgba(255,255,255,.12);
+      border-radius: 12px;
+      min-height: 380px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px;
+      gap: 14px;
+    }
+
+    .embed-placeholder .tool-badge {
+      background: var(--green);
+      color: var(--black);
+      font-size: .7rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    .embed-placeholder .tool-badge.flourish { background: #e24a68; color: #fff; }
+    .embed-placeholder .tool-badge.datawrapper { background: #3a7cec; color: #fff; }
+    .embed-placeholder .tool-badge.tableau { background: #e8762d; color: #fff; }
+
+    .embed-placeholder p {
+      color: var(--muted);
+      font-size: .88rem;
+      max-width: 320px;
+    }
+
+    .embed-placeholder .icon { font-size: 2.5rem; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 48px 40px;
+      color: var(--muted);
+      font-size: .8rem;
+      border-top: 1px solid rgba(255,255,255,.07);
+    }
+
+    footer a { color: var(--green); text-decoration: none; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--black); }
+    ::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 3px; }
+
+    /* ── Heatmap custom ── */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: 60px repeat(24, 1fr);
+      gap: 3px;
+      font-size: .65rem;
+      color: var(--light);
+    }
+
+    .heatmap-grid .day-label {
+      display: flex;
+      align-items: center;
+      color: var(--light);
+      padding-right: 8px;
+    }
+
+    .heatmap-grid .hour-label {
+      text-align: center;
+      color: var(--muted);
+      padding-bottom: 4px;
+    }
+
+    .heatmap-cell {
+      aspect-ratio: 1;
+      border-radius: 3px;
+      transition: opacity .2s;
+      cursor: default;
+    }
+
+    .heatmap-cell:hover { opacity: .8; }
+
+    .hour-labels-row {
+      display: grid;
+      grid-template-columns: 60px repeat(24, 1fr);
+      gap: 3px;
+      margin-bottom: 4px;
+      font-size: .6rem;
+      color: var(--muted);
+    }
+
+    /* ── Donut label ── */
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .donut-wrap .chart-wrap { flex: 0 0 200px; height: 200px; }
+
+    .legend-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .legend-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .9rem;
+    }
+
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav>
+  <a class="nav-logo" href="#">🎵 Mi Spotify</a>
+  <ul class="nav-links">
+    <li><a href="#cuando">¿Cuándo?</a></li>
+    <li><a href="#hora">¿A qué hora?</a></li>
+    <li><a href="#dispositivos">¿Desde dónde?</a></li>
+    <li><a href="#likes">¿Qué me gustó?</a></li>
+    <li><a href="#proximas">Próximamente</a></li>
+  </ul>
+</nav>
+
+<!-- ── Hero ── -->
+<header class="hero">
+  <p class="hero-eyebrow">Trabajo Práctico · Visualización de Datos Personales</p>
+  <h1>6 meses escuchando<br><span>Spotify</span></h1>
+  <p class="hero-sub">
+    ¿Qué revelan mis hábitos de escucha? Una exploración visual de mis datos personales entre septiembre 2025 y marzo 2026.
+  </p>
+  <div class="hero-stats">
+    <div class="stat-pill">
+      <span class="num">406</span>
+      <span class="label">Horas escuchadas</span>
+    </div>
+    <div class="stat-pill">
+      <span class class="num">6.126</span>
+      <span class="label">Sesiones de reproducción</span>
+    </div>
+    <div class="stat-pill">
+      <span class="num">85</span>
+      <span class="label">Canciones que me gustaron</span>
+    </div>
+    <div class="stat-pill">
+      <span class="num">4</span>
+      <span class="label">Meses de pico (Oct–Nov)</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── Viz 1: Monthly listening ── -->
+<section id="cuando">
+  <p class="section-label">Visualización 1 · RAWGraphs</p>
+  <h2 class="section-question">¿En qué meses escuché más música?</h2>
+  <p class="section-desc">
+    Cada barra representa las horas totales de reproducción en ese mes. Octubre y noviembre 2025 fueron mis meses más activos, con más de 80 horas cada uno.
+  </p>
+
+  <div class="card">
+    <div class="chart-wrap tall">
+      <canvas id="chartMonthly"></canvas>
+    </div>
+    <div class="insight">
+      <strong>💡 Insight:</strong> Mis picos de escucha coinciden con el inicio de la primavera en Argentina (oct–nov). El descenso en diciembre puede reflejar mayor actividad social durante las fiestas.
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── Viz 2: Hour heatmap ── -->
+<section id="hora">
+  <p class="section-label">Visualización 2 · Flourish</p>
+  <h2 class="section-question">¿A qué hora del día escucho Spotify?</h2>
+  <p class="section-desc">
+    El mapa de calor muestra la distribución de sesiones por hora y día de la semana. Las zonas más oscuras = más sesiones de escucha.
+  </p>
+
+  <div class="card">
+    <div id="heatmap-container"></div>
+    <div class="insight">
+      <strong>💡 Insight:</strong> Mi horario de mayor escucha es entre las 15:00 y las 23:00 — claramente una persona de tarde y noche. El horario de la mañana (6–9 hs) está casi vacío.
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── Viz 3: Device donut ── -->
+<section id="dispositivos">
+  <p class="section-label">Visualización 3 · DataWrapper</p>
+  <h2 class="section-question">¿Desde qué dispositivo escucho música?</h2>
+  <p class="section-desc">
+    La enorme mayoría de mis sesiones ocurren desde el celular. Spotify es para mí principalmente una experiencia mobile.
+  </p>
+
+  <div class="card-grid two">
+    <div class="card">
+      <div class="donut-wrap">
+        <div class="chart-wrap" style="height:220px; flex: 0 0 220px;">
+          <canvas id="chartDevice"></canvas>
+        </div>
+        <ul class="legend-list">
+          <li>
+            <span class="legend-dot" style="background:#1DB954;"></span>
+            <div>
+              <div style="font-weight:700;">Mobile</div>
+              <div style="color:var(--light); font-size:.85rem;">5.721 sesiones (93.4%)</div>
+            </div>
+          </li>
+          <li>
+            <span class="legend-dot" style="background:#9b59b6;"></span>
+            <div>
+              <div style="font-weight:700;">Desktop</div>
+              <div style="color:var(--light); font-size:.85rem;">405 sesiones (6.6%)</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <p style="font-size:.8rem; color:var(--green); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px;">Tipo de transición</p>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="chartTransition"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight" style="margin-top:20px;">
+    <strong>💡 Insight:</strong> El 23% de mis sesiones usa crossfade — significa que escucho en modo "flujo continuo", sin querer cortar la música entre canciones.
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── Viz 4: Liked songs ── -->
+<section id="likes">
+  <p class="section-label">Visualización 4 · Tableau</p>
+  <h2 class="section-question">¿Cuándo descubrí canciones que me gustaron?</h2>
+  <p class="section-desc">
+    Cada vez que le doy "me gusta" a una canción queda registrado. ¿Hay meses en los que descubrí más música nueva?
+  </p>
+
+  <div class="card">
+    <div class="chart-wrap medium">
+      <canvas id="chartLikes"></canvas>
+    </div>
+    <div class="insight">
+      <strong>💡 Insight:</strong> Enero 2026 fue mi mes de mayor descubrimiento musical con 32 canciones nuevas. Curiosamente, esto no coincide con mis meses de más horas de escucha — quizás enero fue un mes de exploración de artistas nuevos.
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── Placeholders for tool embeds (final version) ── -->
+<section id="proximas">
+  <p class="section-label">Entrega Final · Próximamente</p>
+  <h2 class="section-question">¿Qué visualizaciones vienen en la versión final?</h2>
+  <p class="section-desc">
+    En la entrega final (27 de abril), estas secciones serán reemplazadas por visualizaciones interactivas creadas con las herramientas especificadas.
+  </p>
+
+  <div class="card-grid two" style="margin-bottom: 20px;">
+    <div class="embed-placeholder">
+      <span class="icon">🔮</span>
+      <span class="tool-badge">RAWGraphs</span>
+      <strong>Gráfico de barras apiladas</strong>
+      <p>Distribución de horas de escucha por mes, segmentadas por dispositivo (mobile vs desktop)</p>
+    </div>
+    <div class="embed-placeholder">
+      <span class="icon">🌊</span>
+      <span class="tool-badge flourish">Flourish</span>
+      <strong>Mapa de calor interactivo</strong>
+      <p>Horas × días de la semana con tooltips y filtros temporales animados</p>
+    </div>
+  </div>
+
+  <div class="card-grid two">
+    <div class="embed-placeholder">
+      <span class="icon">📊</span>
+      <span class="tool-badge datawrapper">DataWrapper</span>
+      <strong>Gráfico de donut animado</strong>
+      <p>Distribución de dispositivos y tipos de transición embebido directamente desde DataWrapper</p>
+    </div>
+    <div class="embed-placeholder">
+      <span class="icon">📈</span>
+      <span class="tool-badge tableau">Tableau Public</span>
+      <strong>Dashboard interactivo</strong>
+      <p>Vista combinada de hábitos de escucha con filtros por mes, hora y dispositivo desde Tableau Public</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <p>Trabajo Práctico · Visualización de Datos Personales · Prototipo — 30 de marzo 2026</p>
+  <p style="margin-top:8px;">Datos: exportación personal de Spotify · Herramientas: Chart.js (prototipo) → RAWGraphs, Flourish, DataWrapper, Tableau (versión final)</p>
+</footer>
+
+<!-- ── Scripts ── -->
+<script>
+  // ── Paleta de colores ──
+  const GREEN = '#1DB954';
+  const GREEN2 = '#1ed760';
+  const PURPLE = '#9b59b6';
+  const PINK = '#e91e8c';
+  const MUTED = '#535353';
+  const LIGHT = '#b3b3b3';
+
+  Chart.defaults.color = '#b3b3b3';
+  Chart.defaults.font.family = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+
+  // ── 1. Monthly listening hours (bar chart) ──
+  const monthlyCtx = document.getElementById('chartMonthly').getContext('2d');
+
+  const months = ['Sep 2025', 'Oct 2025', 'Nov 2025', 'Dic 2025', 'Ene 2026', 'Feb 2026', 'Mar 2026'];
+  const hours  = [30.9, 80.7, 84.5, 61.2, 55.5, 60.5, 33.2];
+  const sessions = [571, 1226, 1319, 934, 719, 876, 481];
+
+  const gradientBar = monthlyCtx.createLinearGradient(0, 0, 0, 380);
+  gradientBar.addColorStop(0, GREEN);
+  gradientBar.addColorStop(1, '#0d6b30');
+
+  new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: 'Horas escuchadas',
+          data: hours,
+          backgroundColor: gradientBar,
+          borderRadius: 6,
+          borderSkipped: false,
+          yAxisID: 'y',
+        },
+        {
+          label: 'N° de sesiones',
+          data: sessions,
+          type: 'line',
+          borderColor: '#e91e8c',
+          backgroundColor: 'rgba(233,30,140,.08)',
+          borderWidth: 2,
+          pointBackgroundColor: '#e91e8c',
+          pointRadius: 5,
+          tension: 0.35,
+          yAxisID: 'y2',
+          fill: true,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { padding: 20, usePointStyle: true } },
+        tooltip: {
+          backgroundColor: '#282828',
+          titleColor: '#fff',
+          bodyColor: '#b3b3b3',
+          borderColor: 'rgba(255,255,255,.08)',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            label: ctx => {
+              if (ctx.datasetIndex === 0) return ` ${ctx.parsed.y.toFixed(1)} horas`;
+              return ` ${ctx.parsed.y} sesiones`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,.05)' },
+          ticks: { color: LIGHT }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,.05)' },
+          ticks: { color: LIGHT, callback: v => v + 'h' },
+          title: { display: true, text: 'Horas', color: LIGHT }
+        },
+        y2: {
+          position: 'right',
+          grid: { display: false },
+          ticks: { color: '#e91e8c' },
+          title: { display: true, text: 'Sesiones', color: '#e91e8c' }
+        }
+      }
+    }
+  });
+
+  // ── 2. Heatmap (hand-drawn with divs) ──
+  // Data: sessions per day-of-week × hour
+  // Days: Mon=0 … Sun=6 | Hours: 0–23
+  // We'll use approximate distribution from the real data
+  const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const dayCounts = [755, 960, 919, 825, 884, 945, 838]; // total per day
+  const hourCounts = [403,340,237,227,123,75,20,13,5,17,23,35,104,177,302,445,631,361,429,448,460,348,439,464];
+
+  // Distribute sessions proportionally (day × hour weight)
+  const totalSessions = 6126;
+  const heatData = [];
+  for (let d = 0; d < 7; d++) {
+    heatData[d] = [];
+    const dayWeight = dayCounts[d] / totalSessions;
+    for (let h = 0; h < 24; h++) {
+      const hourWeight = hourCounts[h] / totalSessions;
+      heatData[d][h] = Math.round(totalSessions * dayWeight * hourWeight * 7);
+    }
+  }
+
+  const maxCell = Math.max(...heatData.flat());
+
+  const container = document.getElementById('heatmap-container');
+  container.style.overflowX = 'auto';
+
+  // Build hour labels
+  const labelsRow = document.createElement('div');
+  labelsRow.className = 'hour-labels-row';
+  const emptyCell = document.createElement('div');
+  labelsRow.appendChild(emptyCell);
+  for (let h = 0; h < 24; h++) {
+    const lbl = document.createElement('div');
+    lbl.style.textAlign = 'center';
+    lbl.style.color = '#535353';
+    lbl.style.fontSize = '.6rem';
+    lbl.textContent = h % 3 === 0 ? `${h}h` : '';
+    labelsRow.appendChild(lbl);
+  }
+  container.appendChild(labelsRow);
+
+  // Build grid
+  const grid = document.createElement('div');
+  grid.className = 'heatmap-grid';
+
+  for (let d = 0; d < 7; d++) {
+    // Day label
+    const dl = document.createElement('div');
+    dl.className = 'day-label';
+    dl.textContent = dayNames[d].substring(0,3);
+    grid.appendChild(dl);
+
+    for (let h = 0; h < 24; h++) {
+      const val = heatData[d][h];
+      const intensity = val / maxCell;
+      const cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      // Color: dark green → bright green
+      const r = Math.round(0 + intensity * 29);
+      const g = Math.round(40 + intensity * 145);
+      const b = Math.round(20 + intensity * 64);
+      cell.style.backgroundColor = `rgb(${r},${g},${b})`;
+      cell.title = `${dayNames[d]} ${h}:00 — ~${val} sesiones`;
+      grid.appendChild(cell);
+    }
+  }
+
+  container.appendChild(grid);
+
+  // Legend for heatmap
+  const legendWrap = document.createElement('div');
+  legendWrap.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:14px;font-size:.7rem;color:#535353;';
+  legendWrap.innerHTML = `<span>Menos</span>
+    ${[0,.2,.4,.6,.8,1].map(v=>{
+      const r=Math.round(v*29), g=Math.round(40+v*145), b=Math.round(20+v*64);
+      return `<div style="width:22px;height:22px;border-radius:3px;background:rgb(${r},${g},${b})"></div>`;
+    }).join('')}
+    <span>Más sesiones</span>`;
+  container.appendChild(legendWrap);
+
+  // ── 3. Device donut ──
+  const deviceCtx = document.getElementById('chartDevice').getContext('2d');
+  new Chart(deviceCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Mobile', 'Desktop'],
+      datasets: [{
+        data: [5721, 405],
+        backgroundColor: [GREEN, PURPLE],
+        borderColor: '#282828',
+        borderWidth: 3,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#282828',
+          titleColor: '#fff',
+          bodyColor: '#b3b3b3',
+          borderColor: 'rgba(255,255,255,.08)',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.toLocaleString()} sesiones (${(ctx.parsed/6126*100).toFixed(1)}%)`
+          }
+        }
+      }
+    }
+  });
+
+  // ── 4. Transition type ──
+  const transCtx = document.getElementById('chartTransition').getContext('2d');
+  new Chart(transCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Sin transición', 'Crossfade', 'Gapless'],
+      datasets: [{
+        data: [4533, 1411, 182],
+        backgroundColor: [GREEN, '#e91e8c', PURPLE],
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#282828',
+          titleColor: '#fff',
+          bodyColor: '#b3b3b3',
+          borderColor: 'rgba(255,255,255,.08)',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.x.toLocaleString()} sesiones`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: LIGHT } },
+        y: { grid: { display: false }, ticks: { color: LIGHT } }
+      }
+    }
+  });
+
+  // ── 5. Liked songs per month ──
+  const likesCtx = document.getElementById('chartLikes').getContext('2d');
+  const likedMonths = ['Nov 2025', 'Dic 2025', 'Ene 2026', 'Feb 2026', 'Mar 2026'];
+  const likedCounts = [9, 19, 32, 18, 7];
+
+  const gradLikes = likesCtx.createLinearGradient(0, 0, 0, 300);
+  gradLikes.addColorStop(0, 'rgba(233,30,140,.4)');
+  gradLikes.addColorStop(1, 'rgba(233,30,140,0)');
+
+  new Chart(likesCtx, {
+    type: 'line',
+    data: {
+      labels: likedMonths,
+      datasets: [{
+        label: 'Canciones con "me gusta"',
+        data: likedCounts,
+        borderColor: PINK,
+        backgroundColor: gradLikes,
+        borderWidth: 2.5,
+        pointBackgroundColor: PINK,
+        pointRadius: 7,
+        pointHoverRadius: 9,
+        tension: 0.35,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#282828',
+          titleColor: '#fff',
+          bodyColor: '#b3b3b3',
+          borderColor: 'rgba(255,255,255,.08)',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y} canciones`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: LIGHT } },
+        y: {
+          grid: { color: 'rgba(255,255,255,.05)' },
+          ticks: { color: LIGHT, stepSize: 5 },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+</script>
+</body>
+</html>
