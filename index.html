@@ -196,6 +196,7 @@
   <a class="nav-logo" href="#">🎵 Mi Spotify</a>
   <ul class="nav-links">
     <li><a href="#likes">Descubrimientos</a></li>
+    <li><a href="#artistas">Artistas</a></li>
     <li><a href="#heatmap">Horarios</a></li>
     <li><a href="#dispositivo">Dispositivo</a></li>
     <li><a href="#horas">Horas</a></li>
@@ -230,7 +231,35 @@
 
 <hr class="divider" />
 
-<!-- VIZ 2: HEATMAP (Flourish) -->
+<!-- VIZ 2: TOP ARTISTAS (DataWrapper) -->
+<section class="section-wrap" id="artistas">
+  <h2 class="section-q">¿Cuál fue mi artista favorito en cantidad de likes?</h2>
+  <p class="section-story">
+    Los 81 "me gusta" del gráfico anterior se reparten entre <strong>61 artistas distintos</strong>. <strong>Etzu Mahkayah lidera con 5 likes</strong>, seguido por Chris Stussy y Tomi&amp;Kesh con 3 cada uno. Pero el dato más interesante no está en el podio, sino en la cola larga: <strong>51 de los 61 artistas aparecen una sola vez</strong>. Mi forma de descubrir música es más exploratoria que repetitiva — escucho un tema nuevo, le doy like, y sigo buscando otra cosa.
+  </p>
+
+  <div class="dw-wrap">
+    <div style="min-height:1529px" id="datawrapper-vis-f9WAd">
+      <script type="text/javascript" defer
+        src="https://datawrapper.dwcdn.net/f9WAd/embed.js"
+        charset="utf-8"
+        data-target="#datawrapper-vis-f9WAd">
+      </script>
+      <noscript>
+        <img src="https://datawrapper.dwcdn.net/f9WAd/full.png"
+             alt="Cuál fue mi artista favorito en cantidad de likes? (Bar Chart)" />
+      </noscript>
+    </div>
+  </div>
+
+  <div class="insight">
+    💡 <strong>Una biblioteca casi enteramente electrónica:</strong> el top diez está dominado por productores de tech-house, house y trance (Chris Stussy, Tomi&amp;Kesh, Traumer, Franky Rizardo, Paul Oakenfold). Esto conecta directamente con el patrón del heatmap más abajo: música hecha para sets de DJ encaja con los horarios de tarde-noche y las madrugadas de sábado.
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- VIZ 3: HEATMAP (Flourish) -->
 <section class="section-wrap" id="heatmap">
   <h2 class="section-q">¿En qué momento del día escucho más música?</h2>
   <p class="section-story">
@@ -328,7 +357,7 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>Trabajo Práctico · Visualización de Datos Personales</p>
+  <p>Trabajo Práctico · Visualización de Datos Personales · Entrega Final — 27 de abril 2026</p>
   <p style="margin-top:8px;">
     Fuente: exportación personal de Spotify ·
     Herramientas: <a href="https://rawgraphs.io" target="_blank">RAWGraphs</a>,
